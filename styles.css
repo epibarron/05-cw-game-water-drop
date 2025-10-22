@@ -1,145 +1,304 @@
-/* Charity: water Brand Colors & Fonts
+:root{
+    --bg:#e8f7ff;
+    --panel:#ffffff;
+    --accent:#1e90ff;
+    --good:#23c55e; /* green for positive */
+    --bad:#ff3b30;  /* red for negative */
+    --can:#ffb84d;
 
-Primary Colors:
-- Yellow:     #FFC907
-- Blue:       #2E9DF7
-
-Secondary Colors:
-- Light Blue: #8BD1CB
-- Green:      #4FCB53
-- Orange:     #FF902A
-- Red:        #F5402C
-- Dark Green: #159A48
-- Pink:       #F16061
-
-Fonts:
-- Proxima Nova
-- Avenir
-
-*/
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+    /* entity sizes scale between small phones and large desktops */
+    --entity-size: clamp(44px, 6.5vw, 72px);      /* default for regular drops */
+    --big-drop-size: clamp(72px, 12vw, 120px);    /* large +5 drops */
+    --container-height: min(64vh, 560px);
+    --score-font: clamp(14px, 2.2vw, 20px);
 }
 
-body {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    background-color: #f0f0f0;
-    font-family: Arial, sans-serif;
+body{
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    background: linear-gradient(180deg,#e6f7ff 0%, #f7fdff 100%);
+    margin:0;
+    padding:24px;
+    color:#222;
 }
 
-.game-wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
+.game-wrapper{
+    max-width:820px;
+    margin:0 auto;
 }
 
-.score-panel {
-    display: flex;
-    justify-content: space-between;  /* Space between score and button */
-    align-items: center;
-    width: 800px;
-    padding: 10px;
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+.game-title{
+    margin:0 0 8px 0;
+    font-family: "Times New Roman", Times, serif;
+    font-weight:700;
+    font-size: clamp(20px, 4.5vw, 32px);
+}
+.title-icon{
+  width: auto;
+  height: 1em; /* match the title's font-size so the icon scales with the title */
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 0.6ch;
+  transform: translateY(0.06em); /* small nudge to visually center with serif baseline */
+  object-fit: contain;
 }
 
-.timer {
-    flex: 0 1 auto;
-    font-size: 24px;
-    font-weight: bold;
+/* keep icon from growing too large on very wide screens */
+.game-title .title-icon{
+  max-height: calc(var(--big-drop-size, 64px) * 0.85);
 }
 
-#game-container {
-    width: 800px;
-    height: 600px;
-    background-color: #e6f7ff;
-    border: 2px solid #333;
-    border-radius: 8px;
-    position: relative;
-    overflow: hidden;
+.score-panel{
+    display:flex;
+    gap:12px;
+    align-items:center;
+    margin-bottom:12px;
+    flex-wrap:wrap;
+}
+.score-panel > * { line-height:1; }
+#start-btn{
+  padding:12px 18px;
+  font-size:var(--score-font);
+  font-weight:800;
+  border-radius:12px;
+  border:0;
+  cursor:pointer;
+  color:#fff;
+  background: linear-gradient(90deg,#10b981 0%, #06b6d4 60%, #3b82f6 100%);
+  box-shadow: 0 10px 30px rgba(14,165,233,0.20), inset 0 -2px 0 rgba(255,255,255,0.06);
+  transition: transform 220ms cubic-bezier(.2,.9,.3,1), box-shadow 220ms, opacity 180ms;
+  position:relative;
+  overflow:hidden;
 }
 
-
-#start-btn {
-    padding: 8px 16px;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
+/* Make container a clear boxed game area */
+#game-container{
+    position:relative;
+    height:var(--container-height);
+    background: var(--panel);
+    border: 2px solid rgba(30,144,255,0.12);
+    border-radius:12px;
+    overflow:hidden;
+    box-shadow: 0 10px 30px rgba(22,66,110,0.06);
+    display:block;
+    margin: 0 auto;
+    width:100%;
+    max-width:720px;
+    touch-action: none; /* avoid accidental scroll on touch */
 }
 
-#start-btn:hover {
-    background-color: #45a049;
+/* Falling entities: use CSS variables so JS-sizing is not the only source */
+.falling{
+    position:absolute;
+    top:-140px;
+    user-select:none;
+    cursor:pointer;
+    transform-origin:center;
+    animation-name:fall;
+    animation-timing-function: linear;
+    will-change: transform, opacity;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    pointer-events:auto;
+    z-index: 10;
 }
 
-.score {
-    flex: 0 1 auto;  /* Don't grow, can shrink, auto basis */
-    font-size: 24px;
-    font-weight: bold;
+/* default drop sizing */
+.drop{
+    width:var(--entity-size);
+    height:var(--entity-size);
+    border-radius:50%;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(255,255,255,0.95);
+    box-shadow:0 6px 14px rgba(0,0,0,0.06);
+    font-size: calc(var(--entity-size) * 0.42);
+    padding:6px;
+    transition: transform 160ms ease, box-shadow 160ms ease;
+}
+.drop.good{ border:3px solid var(--good); }
+
+/* big drop (replacement for +5) */
+.big-drop{
+    width:var(--big-drop-size);
+    height:var(--big-drop-size);
+    border-radius:50%;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    background: linear-gradient(180deg,#e6faff,#d7f0ff);
+    box-shadow:0 12px 28px rgba(30,144,255,0.12);
+    font-size: calc(var(--big-drop-size) * 0.45);
+    color:#1e90ff;
+    padding:6px;
+    border:3px solid rgba(30,144,255,0.14);
 }
 
-.water-drop {
-    position: absolute;
-    width: 60px;  /* increased from 40px */
-    height: 60px; /* increased from 40px */
-    background-color: #0099ff;
-    border-radius: 50%;
-    animation: dropFall linear forwards;
-    transform-origin: center;
-    cursor: pointer;
-    padding: 15px;  /* Add padding for larger click area */
-    margin: -15px;  /* Offset padding to maintain visual size */
-    transition: transform 0.1s ease;  /* Smooth hover effect */
+/* bad drop: render as a black raindrop that subtracts points */
+.drop.bad {
+    background: #111;
+    color: #fff;
+    border: 2px solid rgba(255,255,255,0.06);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.28);
+    font-weight:700;
 }
 
-.water-drop:hover {
-    transform: scale(1.1);  /* Slight grow effect on hover */
+/* obstacle styling: visually distinct dangerous storm that subtracts points */
+.obstacle{
+  width: clamp(48px, 8vw, 80px);
+  height: clamp(48px, 8vw, 80px);
+  border-radius: 14px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  background: linear-gradient(180deg,#1f2937,#0f1724); /* dark storm */
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.28);
+  font-size: clamp(20px, 5vw, 36px);
+  border: 2px solid rgba(255,255,255,0.06);
 }
 
-.bad-drop {
-    background-color: #ff4444;
+/* make negative collected outline clearly red for obstacles */
+.obstacle.collected-bad { outline: 4px solid rgba(255,59,48,0.28); box-shadow:0 12px 30px rgba(255,59,48,0.06); }
+
+/* collected feedback outlines */
+.collected-good { outline: 3px solid rgba(35,197,94,0.22); box-shadow:0 12px 30px rgba(35,197,94,0.06); }
+.collected-bad  { outline: 3px solid rgba(255,59,48,0.22); box-shadow:0 12px 30px rgba(255,59,48,0.06); }
+
+/* ensure collected animation still applies (shrink + fade) */
+.collected{
+    transform: scale(0.2) rotate(20deg);
+    opacity:0;
+    transition: transform 220ms ease, opacity 220ms ease;
 }
 
-.game-title {
-    color: #131313;
-    font-size: 48px;
-    margin-top: 0;
-    margin-bottom: 5px;  /* reduced from 20px */
-    text-align: center;
-}
-
-.game-tagline {
-    color: #666;
-    font-size: 18px;
-    margin-bottom: 20px;
-    text-align: center;
-}
-
-@keyframes dropFall {
-    from {
-        transform: translateY(-20px);
-    }
+/* fall animation: translate down within the box, not the full viewport */
+@keyframes fall {
     to {
-        transform: translateY(600px);
+        transform: translateY(calc(var(--container-height) + 160px));
     }
 }
 
-@media (max-width: 850px) {
-    .game-wrapper, .score-panel, #game-container {
-        width: 95vw;
-    }
-    
-    #game-container {
-        height: 70vh;
-    }
+/* small responsiveness */
+@media (max-width:480px){
+    #game-container{ height: min(56vh,420px); }
+    .drop{ font-size: calc(var(--entity-size) * 0.38); }
+    .big-drop{ font-size: calc(var(--big-drop-size) * 0.42); }
+}
+
+/* Increase hit target for touch users */
+@media (pointer:coarse) {
+    .drop{ width: calc(var(--entity-size) * 1.08); height: calc(var(--entity-size) * 1.08); }
+    .big-drop{ width: calc(var(--big-drop-size) * 1.04); height: calc(var(--big-drop-size) * 1.04); }
+}
+
+/* Float text styles and animation */
+.float-text{
+  position:absolute;
+  transform: translate(-50%, -50%) translateY(0);
+  background: rgba(255,255,255,0.98);
+  padding:6px 10px;
+  border-radius:8px;
+  font-weight:800;
+  color:#0a0a0a;
+  pointer-events:none;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.12);
+  opacity:1;
+  transition: transform 700ms cubic-bezier(.2,.9,.2,1), opacity 700ms ease;
+  z-index: 9999;
+  will-change: transform, opacity;
+  font-size: clamp(14px, 2.6vw, 20px);
+}
+
+/* positive and negative color variants for floating text */
+.float-text.positive { color: var(--good); border: 2px solid rgba(76,217,100,0.12); background: rgba(247,255,250,0.98); }
+.float-text.negative { color: var(--bad); border: 2px solid rgba(255,59,48,0.12); background: rgba(255,250,250,0.98); }
+
+/* animate the float up and fade out */
+.float-text { animation: floatUp 900ms forwards; }
+@keyframes floatUp {
+  to {
+    transform: translate(-50%, -140%) translateY(-12px);
+    opacity: 0;
+  }
+}
+
+/* Respect users' reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .falling, .float-text { animation: none !important; transition: none !important; }
+}
+
+/* score pulse when changed */
+#score.score-update {
+  color: var(--accent);
+  transform: scale(1.14);
+  transition: transform 160ms ease, color 160ms ease;
+}
+
+/* small refinements for very narrow screens */
+@media (max-width: 420px) {
+  :root { --entity-size: clamp(40px, 12vw, 64px); --big-drop-size: clamp(64px, 18vw, 96px); }
+}
+
+/* gentle sheen on hover */
+#start-btn::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  background: radial-gradient(circle at 10% 10%, rgba(255,255,255,0.28), transparent 22%);
+  opacity:0;
+  pointer-events:none;
+  transition: opacity 260ms;
+}
+#start-btn:hover::after{ opacity:1; }
+#start-btn:hover{ transform: translateY(-4px) scale(1.02); box-shadow: 0 18px 40px rgba(14,165,233,0.26); }
+
+/* exciting pulse animation when pressed */
+#start-btn.excited{
+  animation: start-glow 900ms ease;
+}
+@keyframes start-glow {
+  0%   { transform: scale(1); box-shadow: 0 10px 30px rgba(14,165,233,0.18); }
+  40%  { transform: scale(1.06); box-shadow: 0 24px 52px rgba(14,165,233,0.34); }
+  100% { transform: scale(1); box-shadow: 0 10px 30px rgba(14,165,233,0.18); }
+}
+
+/* visually show disabled state clearly */
+#start-btn:disabled {
+  opacity:0.7;
+  cursor:not-allowed;
+  transform:none !important;
+  box-shadow:none !important;
+  filter: grayscale(0.05);
+}
+
+/* Reset button: playful, friendly */
+#reset-btn{
+  padding:10px 14px;
+  font-size:var(--score-font);
+  font-weight:700;
+  border-radius:10px;
+  cursor:pointer;
+  color:#0f172a;
+  background: linear-gradient(180deg,#fff,#f8fafc);
+  border: 2px solid rgba(15,23,42,0.06);
+  box-shadow: 0 8px 20px rgba(2,6,23,0.04);
+  transition: transform 200ms cubic-bezier(.2,.9,.2,1), box-shadow 200ms, border-color 200ms;
+}
+
+/* fun little jiggle on hover and click */
+#reset-btn:hover { transform: translateY(-3px) rotate(-2deg); box-shadow: 0 12px 28px rgba(2,6,23,0.06); }
+#reset-btn.joy { animation: reset-bounce 700ms ease; }
+@keyframes reset-bounce {
+  0%   { transform: translateY(0) rotate(0); }
+  30%  { transform: translateY(-8px) rotate(-8deg); }
+  60%  { transform: translateY(4px) rotate(4deg); }
+  100% { transform: translateY(0) rotate(0); }
+}
+
+/* focus outlines for accessibility */
+#start-btn:focus, #reset-btn:focus {
+  outline: 3px solid rgba(59,130,246,0.18);
+  outline-offset: 3px;
 }
